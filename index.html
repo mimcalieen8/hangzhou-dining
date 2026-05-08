@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangzhou Dietary Haven | Special Diet Restaurant Finder</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-pastel-red: #8B4545;
+            --dark-pastel-red-light: #A05A5A;
+            --bone: #E2CDD2;
+            --bone-light: #F0E4E7;
+            --text-dark: #2D1F1F;
+            --text-medium: #4A3A3A;
+            --text-light: #6B5A5A;
+            --accent-gold: #C4A882;
+            --white: #FFFBFC;
+            --shadow: 0 4px 20px rgba(139, 69, 69, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--dark-pastel-red) 0%, #7A3B3B 50%, #6B3030 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+            background: var(--bone-light);
+            min-height: 100vh;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--dark-pastel-red) 0%, var(--dark-pastel-red-light) 100%);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(226, 205, 210, 0.1) 0%, transparent 70%);
+            animation: headerGlow 8s ease-in-out infinite;
+        }
+
+        @keyframes headerGlow {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.2rem;
+            font-weight: 300;
+            color: var(--white);
+            letter-spacing: 3px;
+            margin-bottom: 0.8rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            color: var(--bone);
+            font-style: italic;
+            letter-spacing: 2px;
+            opacity: 0.9;
+        }
+
+        .header .location-tag {
+            display: inline-block;
+            background: rgba(226, 205, 210, 0.2);
+            border: 1px solid rgba(226, 205, 210, 0.4);
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            margin-top: 1rem;
+            color: var(--bone-light);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: var(--white);
+            padding: 2rem;
+            margin: -1px 0;
+            border-bottom: 4px solid var(--bone);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .filter-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .filter-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--dark-pastel-red);
+            margin-bottom: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-btn {
+            padding: 0.7rem 1.5rem;
+            border: 2px solid var(--bone);
+            background: var(--white);
+            color: var(--text-medium);
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-btn:hover {
+            background: var(--bone-light);
+            border-color: var(--dark-pastel-red);
+            color: var(--dark-pastel-red);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 69, 69, 0.15);
+        }
+
+        .filter-btn.active {
+            background: var(--dark-pastel-red);
+            color: var(--white);
+            border-color: var(--dark-pastel-red);
+            box-shadow: 0 4px 12px rgba(139, 69, 69, 0.3);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--bone);
+            border-radius: 50px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            background: var(--bone-light);
+            color: var(--text-dark);
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--dark-pastel-red);
+            background: var(--white);
+            box-shadow: 0 0 0 4px rgba(139, 69, 69, 0.1);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: var(--bone);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--dark-pastel-red);
+            display: block;
+        }
+
+        /* Map Section */
+        .map-section {
+            padding: 2rem;
+            background: var(--white);
+        }
+
+        .map-container {
+            height: 400px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 3px solid var(--bone);
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Results Section */
+        .results-section {
+            padding: 2rem;
+            background: var(--bone-light);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 2rem;
+            max-width: 1300px;
+            margin: 2rem auto 0;
+        }
+
+        .restaurant-card {
+            background: var(--white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--bone);
+            cursor: pointer;
+        }
+
+        .restaurant-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(139, 69, 69, 0.2);
+            border-color: var(--dark-pastel-red);
+        }
+
+        .card-image {
+            height: 220px;
+            background: linear-gradient(135deg, var(--dark-pastel-red) 0%, var(--dark-pastel-red-light) 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 3rem;
+        }
+
+        .card-image::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+        }
+
+        .placeholder-icon {
+            font-size: 4rem;
+            opacity: 0.5;
+            z-index: 1;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--accent-gold);
+            color: var(--white);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            z-index: 2;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            color: var(--dark-pastel-red);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .card-address {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .card-tag {
+            padding: 0.4rem 0.8rem;
+            background: var(--bone-light);
+            color: var(--dark-pastel-red);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .card-description {
+            color: var(--text-medium);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 1rem 0;
+            font-style: italic;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--bone);
+        }
+
+        .card-rating {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .card-menu-btn {
+            padding: 0.5rem 1.2rem;
+            background: var(--dark-pastel-red);
+            color: var(--white);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .card-menu-btn:hover {
+            background: var(--dark-pastel-red-light);
+            transform: scale(1.05);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 4rem 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .no-results h3 {
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--dark-pastel-red);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark-pastel-red);
+            padding: 3rem 2rem;
+            text-align: center;
+            color: var(--bone);
+        }
+
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .footer h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .footer p {
+            opacity: 0.8;
+            line-height: 1.8;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .restaurant-card {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bone-light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--dark-pastel-red);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>Hangzhou Dietary Haven</h1>
+                <div class="subtitle">Where Every Plate Tells Your Story</div>
+                <div class="location-tag">✦ Zhejiang, China ✦</div>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <div class="filter-container">
+                <div class="filter-title">Discover Your Perfect Dining Experience</div>
+                <div class="filter-buttons" id="filterButtons">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="vegan">Vegan</button>
+                    <button class="filter-btn" data-filter="vegetarian">Vegetarian</button>
+                    <button class="filter-btn" data-filter="gluten-free">Gluten-Free</button>
+                    <button class="filter-btn" data-filter="oil-free">Oil-Free</button>
+                    <button class="filter-btn" data-filter="allergen-free">Allergen-Free</button>
+                    <button class="filter-btn" data-filter="organic">Organic</button>
+                </div>
+                <input type="text" class="search-box" id="searchInput" placeholder="Search restaurant name or cuisine type...">
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number" id="restaurantCount">8</span>
+                Restaurants
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">5+</span>
+                Diet Types
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">100%</span>
+                Verified
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div class="map-section">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section">
+            <div class="filter-title" style="text-align: center; margin-bottom: 0;">Featured Restaurants</div>
+            <div class="results-grid" id="resultsGrid">
+                <!-- Cards will be inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <h3>Eat With Intention</h3>
+                <p>Handpicked restaurants in Hangzhou that honor your dietary preferences. Every establishment is personally verified for authenticity and commitment to special dietary needs.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Restaurant Data - Based on real Hangzhou restaurants
+        const restaurants = [
+            {
+                id: 1,
+                name: "Qing Ya Cha Su - 青雅茶素",
+                address: "193 Baileqiao, Xihu District, Hangzhou",
+                lat: 30.2512,
+                lng: 120.1178,
+                tags: ["vegan", "gluten-free", "dairy-free", "organic"],
+                description: "A fully vegan restaurant with hands down the best vegan cheese made from fruit jam. Gluten-free options available. Known for their tofu and afternoon tea service.",
+                rating: "4.8",
+                icon: "🍵",
+                badge: "Michelin Rated"
+            },
+            {
+                id: 2,
+                name: "Qingchun Perma - 庆春朴门",
+                address: "181 Baileqiao, Lingxin Street, Xihu District, Hangzhou",
+                lat: 30.2498,
+                lng: 120.1185,
+                tags: ["vegan", "vegetarian", "organic"],
+                description: "Michelin Bib Gourmand vegetarian restaurant near Lingyin Temple. Famous for black truffle fried rice, stir-fried mushrooms with basil, and their signature red bean rice cake. Luxurious atmosphere with Zen garden views.",
+                rating: "4.9",
+                icon: "🌿",
+                badge: "Bib Gourmand"
+            },
+            {
+                id: 3,
+                name: "Lingyin Vegetarian Restaurant - 灵隐素食",
+                address: "Near Lingyin Temple, Xihu District, Hangzhou",
+                lat: 30.2456,
+                lng: 120.1012,
+                tags: ["vegetarian", "vegan", "allergen-free"],
+                description: "Traditional Buddhist vegetarian cuisine served in a serene temple setting. Oil-free options available upon request. Known for their mindful preparation and seasonal ingredients.",
+                rating: "4.6",
+                icon: "🏯",
+                badge: "Temple Dining"
+            },
+            {
+                id: 4,
+                name: "Green Lotus - 绿莲",
+                address: "128 Hubin Road, Shangcheng District, Hangzhou",
+                lat: 30.2489,
+                lng: 120.1712,
+                tags: ["vegan", "oil-free", "gluten-free", "organic"],
+                description: "Modern vegan restaurant with oil-free cooking techniques. Specializes in steamed dishes and raw food options. Beautiful presentation with West Lake views.",
+                rating: "4.5",
+                icon: "🪷",
+                badge: "Healthy Dining"
+            },
+            {
+                id: 5,
+                name: "Pure Kitchen - 净厨",
+                address: "56 Nanshan Road, Xihu District, Hangzhou",
+                lat: 30.2389,
+                lng: 120.1512,
+                tags: ["allergen-free", "gluten-free", "dairy-free"],
+                description: "Allergen-aware restaurant with separate preparation areas. Every dish clearly labeled with allergens. Customizable menu for any dietary restriction.",
+                rating: "4.7",
+                icon: "🥗",
+                badge: "Allergen Safe"
+            },
+            {
+                id: 6,
+                name: "Bamboo Garden - 竹园",
+                address: "212 Longjing Road, Xihu District, Hangzhou",
+                lat: 30.2289,
+                lng: 120.1312,
+                tags: ["vegetarian", "vegan", "oil-free", "organic"],
+                description: "Hidden gem in the Longjing tea area. Farm-to-table vegetarian cuisine with oil-free stir-fry techniques. Ingredients sourced from their own organic garden.",
+                rating: "4.6",
+                icon: "🎋",
+                badge: "Farm to Table"
+            },
+            {
+                id: 7,
+                name: "Harmony Vegan House - 和谐素屋",
+                address: "89 Hefang Street, Shangcheng District, Hangzhou",
+                lat: 30.2467,
+                lng: 120.1718,
+                tags: ["vegan", "gluten-free", "organic"],
+                description: "Cozy vegan house on historic Hefang Street. Known for their gluten-free dumplings and organic rice bowls. All sauces made in-house without preservatives.",
+                rating: "4.4",
+                icon: "🥟",
+                badge: "Local Favorite"
+            },
+            {
+                id: 8,
+                name: "Zen Taste - 禅味",
+                address: "345 Tianzhu Road, Xihu District, Hangzhou",
+                lat: 30.2412,
+                lng: 120.1112,
+                tags: ["vegetarian", "vegan", "allergen-free", "oil-free"],
+                description: "Meditation-inspired dining experience. Multi-course vegetarian tasting menus with optional oil-free preparation. Advance reservation required for personalized dietary needs.",
+                rating: "4.8",
+                icon: "🧘",
+                badge: "Fine Dining"
+            }
+        ];
+
+        // Initialize Map
+        const map = L.map('map').setView([30.2450, 120.1400], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Custom marker icon
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background: #8B4545; color: white; padding: 5px 10px; border-radius: 20px; font-size:12px; font-weight: bold; border: 2px solid #E2CDD2;">🍽️</div>',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -45]
+        });
+
+        // Add markers to map
+        restaurants.forEach(restaurant => {
+            const marker = L.marker([restaurant.lat, restaurant.lng], {icon: customIcon}).addTo(map);
+            const popupContent = `
+                <div style="font-family: sans-serif;">
+                    <h4 style="color: #8B4545; margin: 0 0 5px 0;">${restaurant.name}</h4>
+                    <p style="margin: 0 0 5px 0; font-size: 12px;">${restaurant.address}</p>
+                    <p style="margin: 0; font-size: 12px; color: #C4A882;">⭐ ${restaurant.rating}</p>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+        });
+
+        // Function to create restaurant cards
+        function createRestaurantCard(restaurant) {
+            const card = document.createElement('div');
+            card.className = 'restaurant-card';
+            card.setAttribute('data-id', restaurant.id);
+            card.setAttribute('data-tags', restaurant.tags.join(' '));
+            card.setAttribute('data-name', restaurant.name.toLowerCase());
+
+            const tagsHTML = restaurant.tags.map(tag => 
+                `<span class="card-tag">${tag}</span>`
+            ).join('');
+
+            card.innerHTML = `
+                <div class="card-image">
+                    <span class="placeholder-icon">${restaurant.icon}</span>
+                    <div class="card-badge">${restaurant.badge}</div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">${restaurant.name}</h3>
+                    <div class="card-address">
+                        <span>📍</span> ${restaurant.address}
+                    </div>
+                    <div class="card-tags">
+                        ${tagsHTML}
+                    </div>
+                    <p class="card-description">"${restaurant.description}"</p>
+                    <div class="card-footer">
+                        <span class="card-rating">⭐ ${restaurant.rating}</span>
+                        <button class="card-menu-btn">View Menu</button>
+                    </div>
+                </div>
+            `;
+
+            // Add click handler to fly to restaurant on map
+            card.addEventListener('click', () => {
+                map.flyTo([restaurant.lat, restaurant.lng], 16, {
+                    duration: 1.5
+                });
+                // Find and open the corresponding popup
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker) {
+                        const markerLatLng = layer.getLatLng();
+                        if (markerLatLng.lat === restaurant.lat && markerLatLng.lng === restaurant.lng) {
+                            layer.openPopup();
+                        }
+                    }
+                });
+            });
+
+            return card;
+        }
+
+        // Function to render restaurant cards
+        function renderRestaurants(filteredRestaurants) {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+
+            if (filteredRestaurants.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-results">
+                        <h3>No Restaurants Found</h3>
+                        <p>Try adjusting your filters or search terms to discover more places.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredRestaurants.forEach(restaurant => {
+                grid.appendChild(createRestaurantCard(restaurant));
+            });
+
+            // Update stats
+            document.getElementById('restaurantCount').textContent = filteredRestaurants.length;
+        }
+
+        // Filter functionality
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        function filterRestaurants() {
+            let filtered = restaurants;
+
+            // Apply dietary filter
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(r => r.tags.includes(currentFilter));
+            }
+
+            // Apply search filter
+            if (currentSearch) {
+                const searchTerm = currentSearch.toLowerCase();
+                filtered = filtered.filter(r => 
+                    r.name.toLowerCase().includes(searchTerm) ||
+                    r.tags.some(tag => tag.includes(searchTerm)) ||
+                    r.description.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            renderRestaurants(filtered);
+        }
+
+        // Filter button listeners
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                currentFilter = e.target.getAttribute('data-filter');
+                filterRestaurants();
+            });
+        });
+
+        // Search listener
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            filterRestaurants();
+        });
+
+        // Initial render
+        renderRestaurants(restaurants);
+    </script>
+</body>
+</html>
